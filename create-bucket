@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+    set -euo pipefail
+
 # Check if the number of command-line arguments is correct
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <bucket_name>"
