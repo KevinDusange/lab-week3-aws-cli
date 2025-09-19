@@ -1,30 +1,20 @@
-#!/usr/bin/env bash
-
-set -euo pipefail
+#!/bin/bash
 
 REGION="us-west-2"
 
-if [ $# -ne 1 ]; then
+if [ $# -eq 0 ]; then
     echo "Usage: $0 <keyfile.pem>"
     exit 1
 fi
 
-pemkey="$1"
+pemkey="$1" 
 keyname=$(basename "$pemkey" .pem)
-pubkey="${keyname}.pub"
+echo "Importing: $keyname"
 
-echo "Importing key: $keyname"
-
-# Generate .pub file if it does not exist
-if [ ! -f "$pubkey" ]; then
-    echo "Generating public key from $pemkey..."
-    ssh-keygen -y -f "$pemkey" > "$pubkey"
-fi
-
-# Import into AWS
-aws ec2 import-key-pair \
+# Extract public key from .pem and use it
+ssh-keygen -y -f "$pemkey" | aws ec2 import-key-pair \
     --key-name "$keyname" \
-    --public-key-material file://"$pubkey" \
+    --public-key-material file:///dev/stdin \
     --region "$REGION"
-
-echo "Successfully imported key"
+    
+echo "Imported key: $keyname"
