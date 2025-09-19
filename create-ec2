@@ -5,6 +5,7 @@ set -euo pipefail
 region="us-west-2"
 key_name="bcitkey"
 
+# Load VPC and subnet info
 source ./infrastructure_data
 
 # Get most recent Debian AMI
@@ -15,46 +16,56 @@ debian_ami=$(aws ec2 describe-images \
   --output text)
 
 # Create security group allowing SSH and HTTP from anywhere
-security_group_id=$(aws ec2 create-security-group --group-name MySecurityGroup \
- --description "Allow SSH and HTTP" --vpc-id $vpc_id --query 'GroupId' \
- --region $region \
- --output text)
+security_group_id=$(aws ec2 create-security-group \
+  --group-name MySecurityGroup \
+  --description "Allow SSH and HTTP" \
+  --vpc-id "$vpc_id" \
+  --query 'GroupId' \
+  --region "$region" \
+  --output text)
 
-aws ec2 authorize-security-group-ingress --group-id $security_group_id \
- --protocol tcp --port 22 --cidr 0.0.0.0/0 --region $region
+aws ec2 authorize-security-group-ingress \
+  --group-id "$security_group_id" \
+  --protocol tcp --port 22 --cidr 0.0.0.0/0 \
+  --region "$region"
 
-aws ec2 authorize-security-group-ingress --group-id $security_group_id \
- --protocol tcp --port 80 --cidr 0.0.0.0/0 --region $region
+aws ec2 authorize-security-group-ingress \
+  --group-id "$security_group_id" \
+  --protocol tcp --port 80 --cidr 0.0.0.0/0 \
+  --region "$region"
 
 # Launch an EC2 instance in the public subnet
-# COMPLETE THIS PART
-instance_id=$( aws ec2 run-instances \
+instance_id=$(aws ec2 run-instances \
   --image-id "$debian_ami" \
   --instance-type t3.micro \
-  --key-name  "$key_name" \
+  --key-name "$key_name" \
   --subnet-id "$subnet_id" \
-  --security-group-ids "$security_group_id"\
+  --security-group-ids "$security_group_id" \
   --associate-public-ip-address \
-)
+  --region "$region" \
+  --query 'Instances[0].InstanceId' \
+  --output text)
 
-# wait for ec2 instance to be running
-aws ec2 wait instance-running --instance-ids $instance_id
+echo "Launched EC2 instance: $instance_id"
 
-# Get the public IP address of the EC2 instance
-# COMPLETE THIS PART
+# Wait until the instance is running
+aws ec2 wait instance-running --instance-ids "$instance_id" --region "$region"
+echo "Instance is running."
+
+# Get the public IP address
 public_ip=$(aws ec2 describe-instances \
   --instance-ids "$instance_id" \
-  --region  "$region"\
+  --region "$region" \
   --query 'Reservations[0].Instances[0].PublicIpAddress' \
-  --output text
-)
+  --output text)
 
-# Write instance data to a file
-# COMPLETE THIS PART
-echo "Public IP: $public_ip" 
+echo "Public IP: $public_ip"
 
+# Save instance data to a file
 cat > instance_data <<EOF
 INSTANCE_ID=$instance_id
 PUBLIC_IP=$public_ip
 REGION=$region
 EOF
+
+echo "Instance data saved to instance_data"
