@@ -2,19 +2,11 @@
 
 REGION="us-west-2"
 
-if [ $# -eq 0 ]; then
-    echo "Usage: $0 <keyfile.pem>"
-    exit 1
-fi
+echo "Importing bcitkey to AWS..."
 
-pemkey="$1" 
-keyname=$(basename "$pemkey" .pem)
-echo "Importing: $keyname"
-
-# Extract public key from .pem and use it
-ssh-keygen -y -f "$pemkey" | aws ec2 import-key-pair \
-    --key-name "$keyname" \
-    --public-key-material file:///dev/stdin \
+aws ec2 import-key-pair \
+    --key-name "bcitkey" \
+    --public-key-material "fileb://bcitkey.pem" \
     --region "$REGION"
     
-echo "Imported key: $keyname"
+echo "Imported key: bcitkey"
