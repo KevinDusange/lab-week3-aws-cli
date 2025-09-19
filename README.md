@@ -1,6 +1,8 @@
 # 4640-w3-lab-start-w25
 
 ## Script 1 - Import key
+Import Key Pairs
+https://docs.aws.amazon.com/cli/latest/reference/ec2/import-key-pair.html
 
 ## Script 2 - Create bucket
 Example 3
