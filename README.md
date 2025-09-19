@@ -13,3 +13,6 @@ Create VPC
 https://docs.aws.amazon.com/cli/latest/reference/ec2/create-vpc.html
 
 ## Script 4 - Create ec2
+run-instances: https://docs.aws.amazon.com/cli/latest/reference/ec2/run-instances.html
+
+describe-instances: https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-instances.html 
