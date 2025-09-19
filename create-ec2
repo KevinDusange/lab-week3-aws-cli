@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
 region="us-west-2"
@@ -8,6 +7,8 @@ key_name="bcitkey"
 # Load VPC and subnet info
 source ./infrastructure_data
 
+echo "Launching EC2 in VPC $vpc_id, subnet $subnet_id"
+
 # Get most recent Debian AMI
 debian_ami=$(aws ec2 describe-images \
   --owners "136693071363" \
@@ -15,26 +16,35 @@ debian_ami=$(aws ec2 describe-images \
   --query 'Images | sort_by(@, &CreationDate) | [-1].ImageId' \
   --output text)
 
-# Create security group allowing SSH and HTTP from anywhere
-security_group_id=$(aws ec2 create-security-group \
-  --group-name MySecurityGroup \
-  --description "Allow SSH and HTTP" \
-  --vpc-id "$vpc_id" \
-  --query 'GroupId' \
-  --region "$region" \
-  --output text)
+echo "Using AMI: $debian_ami"
 
-aws ec2 authorize-security-group-ingress \
-  --group-id "$security_group_id" \
-  --protocol tcp --port 22 --cidr 0.0.0.0/0 \
-  --region "$region"
+# Check if security group exists
+existing_sg=$(aws ec2 describe-security-groups \
+    --filters "Name=group-name,Values=MySecurityGroup" "Name=vpc-id,Values=$vpc_id" \
+    --query "SecurityGroups[0].GroupId" \
+    --output text \
+    --region "$region")
 
-aws ec2 authorize-security-group-ingress \
-  --group-id "$security_group_id" \
-  --protocol tcp --port 80 --cidr 0.0.0.0/0 \
-  --region "$region"
+if [ "$existing_sg" != "None" ]; then
+    security_group_id="$existing_sg"
+    echo "Using existing security group: $security_group_id"
+else
+    # Create new security group
+    security_group_id=$(aws ec2 create-security-group \
+      --group-name MySecurityGroup \
+      --description "Allow SSH and HTTP" \
+      --vpc-id "$vpc_id" \
+      --query 'GroupId' \
+      --region "$region" \
+      --output text)
+    echo "Created new security group: $security_group_id"
+fi
 
-# Launch an EC2 instance in the public subnet
+# Ensure SSH and HTTP ingress rules exist
+aws ec2 authorize-security-group-ingress --group-id "$security_group_id" --protocol tcp --port 22 --cidr 0.0.0.0/0 --region "$region" || true
+aws ec2 authorize-security-group-ingress --group-id "$security_group_id" --protocol tcp --port 80 --cidr 0.0.0.0/0 --region "$region" || true
+
+# Launch EC2 instance
 instance_id=$(aws ec2 run-instances \
   --image-id "$debian_ami" \
   --instance-type t3.micro \
@@ -48,7 +58,7 @@ instance_id=$(aws ec2 run-instances \
 
 echo "Launched EC2 instance: $instance_id"
 
-# Wait until the instance is running
+# Wait for instance to be running
 aws ec2 wait instance-running --instance-ids "$instance_id" --region "$region"
 echo "Instance is running."
 
