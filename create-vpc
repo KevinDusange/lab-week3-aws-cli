@@ -6,7 +6,6 @@ set -euo pipefail
 region="us-west-2"
 vpc_cidr="10.0.0.0/16"
 subnet_cidr="10.0.1.0/24"
-key_name="bcitkey"
 
 # Create VPC
 vpc_id=$(aws ec2 create-vpc --cidr-block $vpc_cidr --query 'Vpc.VpcId' --output text --region $region)
