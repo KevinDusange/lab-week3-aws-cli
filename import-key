@@ -3,17 +3,18 @@
 REGION="us-west-2"
 
 if [ $# -eq 0 ]; then
-    echo "Usage: $0 <keyfile.pub>"
+    echo "Usage: $0 <keyfile.pem>"
     exit 1
 fi
 
-pubkey="$1" 
-keyname=$(basename "$pubkey" .pub)
+pemkey="$1" 
+keyname=$(basename "$pemkey" .pem)
 echo "Importing: $keyname"
 
-aws ec2 import-key-pair \
+# Extract public key from .pem and use it
+ssh-keygen -y -f "$pemkey" | aws ec2 import-key-pair \
     --key-name "$keyname" \
-    --public-key-material "fileb://$pubkey" \
+    --public-key-material file:///dev/stdin \
     --region "$REGION"
     
 echo "Imported key: $keyname"
