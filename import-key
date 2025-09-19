@@ -6,7 +6,7 @@ echo "Importing bcitkey to AWS..."
 
 aws ec2 import-key-pair \
     --key-name "bcitkey" \
-    --public-key-material "fileb://bcitkey.pem" \
+    --public-key-material "fileb://bcitkey.pub" \
     --region "$REGION"
     
 echo "Imported key: bcitkey"
